@@ -1,0 +1,2 @@
+- First lets build a basic server and client, where the client sends a message and server recieves it
+- then add another client, where two clients a time can send messages and server reads both not one by one
