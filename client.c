@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #define PORT "4444"
-#define MAXDATASIZE 100; // max number of bytes we can recv at once for security
+#define MAXDATASIZE 100 // max number of bytes we can recv at once for security
 
 void *get_in_addr(struct sockaddr *sa) {
   if (sa->sa_family == AF_INET) {
@@ -42,14 +42,45 @@ int main(int argc, char *argv[]) {
 
   // loop through all the results and connect to the first we can
   for (p = servinfo; p != NULL; p = p->ai_next) {
-    if ((socket_fd = socket(servinfo->ai_family, servinfo->ai_socktype,
-                            servinfo->ai_protocol)) != 0) {
+    if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) ==
+        -1) {
       perror("Client: socket_fd");
       continue;
     }
 
-    inet_ntop()
+    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), ip,
+              sizeof ip);
+    printf("Client: Attempting connection to %s\n", ip);
+
+    if (connect(socket_fd, p->ai_addr, p->ai_addrlen) == -1) {
+      perror("Client: connect");
+      close(socket_fd);
+      continue;
+    }
+    break;
   }
+
+  if (p == NULL) {
+    fprintf(stderr, "client: failed to connect\n");
+    return 2;
+  }
+
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), ip,
+            sizeof ip);
+  printf("client: connected to %s\n", ip);
+
+  freeaddrinfo(servinfo);
+
+  if ((numbytes = recv(socket_fd, buffer, MAXDATASIZE - 1, 0)) == -1) {
+    perror("Client: recv");
+    exit(1);
+  }
+
+  buffer[numbytes] = '\0'; // null terminator at string end
+
+  printf("Client: recieved '%s' \n", buffer);
+
+  close(socket_fd);
 
   return 0;
 }
